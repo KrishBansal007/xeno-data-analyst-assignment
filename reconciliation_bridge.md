@@ -10,33 +10,28 @@
 
 ## Reconciliation Bridge
 
-| Step | Adjustment | Count | Reason |
+| Step | Adjustment | Result | Reason |
 |---|---|---:|---|
 | 1 | Naive communication-log row count | 30 | Counts every October communication-log row without applying campaign eligibility or retry/standalone rules. |
-| 2 | Exclude campaign 9004 | 26 | Campaign 9004 is `approval_awaiting`, so its 4 log rows are not officially reportable even though sends exist in the log. |
-| 3 | Collapse retry chains | 20 | Customers reached through a campaign and its retries represent the same underlying communication and must be counted once per distinct customer. |
-| 4 | Restore repeated standalone send | 22 | Campaign 9101 is standalone, so its repeated C20 send is a separate send event and must be counted twice. |
+| 2 | Exclude campaign 9004 | 26 | Campaign 9004 is `approval_awaiting`, so its 4 communication-log rows are not officially reportable. |
+| 3 | Apply retry-chain deduplication | 22 | Customers across a campaign and its retries represent the same underlying communication and are counted once per customer across the complete chain. |
+| 4 | Validate standalone rule | 22 | Campaign 9101 is standalone, so its repeated C20 send is counted as a separate send event. This confirms why the final result is 22 rather than a global distinct-customer count of 21. |
 
-## Final Calculation
+## Final Breakdown
 
 ### Retry chain: 9001 → 9002 → 9003
 
-10 distinct customers:
+The complete retry chain contains:
 
-- C1
-- C2
-- C3
-- C4
-- C5
-- C6
-- C7
-- C8
-- C9
-- C10
+- Campaign 9001: C1–C10
+- Campaign 9002: C2, C3
+- Campaign 9003: C3
 
-**Count = 10**
+The retry attempts overlap with customers already targeted by the original campaign.
 
-The retries do not create additional target-base customers because the same underlying communication is being retried.
+Distinct customers across the entire chain:
+
+**10**
 
 ### Standalone campaign: 9101
 
@@ -50,23 +45,30 @@ Send events:
 - C24
 - C25
 
-Because 9101 is standalone, each send is an individual event.
+Campaign 9101 has no retry relationship.
+
+Because it is standalone, every send is an individual event, including the repeated C20 send.
 
 **Count = 7**
 
 ### Retry chain: 9201 → 9202
 
+The complete retry chain contains:
+
+- Campaign 9201: D1–D5
+- Campaign 9202: D1
+
+D1 appears in both campaigns, so it is counted once across the chain.
+
 Distinct customers:
 
-- D1
-- D2
-- D3
-- D4
-- D5
+**5**
 
-**Count = 5**
-
-### Final target_base
+## Final Calculation
 
 ```text
+Retry chain 9001–9003 = 10
+Standalone campaign 9101 = 7
+Retry chain 9201–9202 = 5
+
 10 + 7 + 5 = 22
