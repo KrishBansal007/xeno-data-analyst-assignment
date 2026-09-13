@@ -23,7 +23,7 @@ The analysis starts from the most naive communication-log count and progressivel
 |---|---:|---|
 | Naive communication-log count | 30 | Counts every matching communication-log row. |
 | Exclude unapproved campaign 9004 | 26 | Campaign 9004 is `approval_awaiting`, so its 4 rows are not reportable. |
-| Apply retry-chain deduplication | 20 | Customers across campaign/retry chains represent the same underlying communication. |
+| Apply retry-chain deduplication | 22 | Customers across campaign/retry chains represent the same underlying communication. |
 | Apply standalone send-event rule | **22** | Repeated sends within standalone campaign 9101 are separate events. |
 
 ## Final Breakdown
